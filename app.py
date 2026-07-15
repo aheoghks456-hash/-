@@ -4,7 +4,7 @@ import json
 import os
 import uuid
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Set
 
 import streamlit as st
 
@@ -17,7 +17,7 @@ DB_PATH = os.path.join(DATA_DIR, "trees.json")
 
 st.set_page_config(page_title=APP_TITLE, page_icon="🌳", layout="wide")
 st.title(APP_TITLE)
-st.caption("나무를 기록하고(누적), 가정을 세우고 확인하며, 나무의 구조·기능과 생태계 역할을 배우는 간단한 기록/학습 사이트")
+st.caption("나무와 주변 생물을 기록하고, 미션·배지·퀴즈를 해결하며 생물다양성을 배우는 학교 숲 탐험 게임")
 
 # 데이터 폴더 생성
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -114,6 +114,79 @@ LEARNING_CARDS = [
 
 CARD_BY_KEY = {c["key"]: c for c in LEARNING_CARDS}
 
+# ---------------------------
+# 게임/생물다양성 콘텐츠
+# ---------------------------
+BIODIVERSITY_ROLES = {
+    "생산자": "스스로 양분을 만들어 먹이그물의 바탕이 돼요. 예: 나무, 풀, 이끼",
+    "꽃가루 매개자": "꽃가루를 옮겨 식물이 열매와 씨를 만들도록 도와요. 예: 벌, 나비, 꽃등에",
+    "씨앗 퍼뜨림": "열매나 씨앗을 다른 곳으로 옮겨 숲이 넓어지게 해요. 예: 새, 다람쥐",
+    "분해자": "죽은 잎과 나무를 잘게 분해해 흙의 양분으로 돌려줘요. 예: 버섯, 지렁이, 공벌레",
+    "서식처 제공": "다른 생물이 숨거나 쉬거나 번식할 장소를 제공해요. 예: 큰 나무, 덤불",
+    "포식자": "다른 생물을 먹어 개체 수 균형을 맞춰요. 예: 거미, 무당벌레, 새",
+}
+
+QUESTS = [
+    {
+        "key": "species_richness",
+        "emoji": "🧭",
+        "title": "종 풍부도 탐험가",
+        "goal": "서로 다른 종/분류 3가지를 등록하기",
+        "tip": "생물다양성은 '종류가 얼마나 다양한가'에서 출발해요.",
+    },
+    {
+        "key": "microhabitat",
+        "emoji": "🏠",
+        "title": "작은 서식처 수색대",
+        "goal": "나무 주변의 생물/흔적을 5개 이상 기록하기",
+        "tip": "나무껍질, 낙엽, 그늘, 열매는 모두 작은 서식처가 될 수 있어요.",
+    },
+    {
+        "key": "food_web",
+        "emoji": "🕸️",
+        "title": "먹이그물 연결자",
+        "goal": "서로 다른 생태 역할 4가지를 찾기",
+        "tip": "생물은 혼자 살지 않고 먹이·도움·서식처 관계로 이어져요.",
+    },
+    {
+        "key": "science_notes",
+        "emoji": "🔬",
+        "title": "시민 과학자",
+        "goal": "관찰/가정 기록 3개 이상 남기기",
+        "tip": "좋은 과학 기록은 '관찰 → 가정 → 확인 → 배운 점'이 이어져요.",
+    },
+]
+
+BADGES = [
+    ("🌱 첫 발견자", "나무 1그루 이상 등록"),
+    ("🌳 숲 지도 제작자", "나무 5그루 이상 등록"),
+    ("🦋 생물다양성 탐정", "주변 생물/흔적 5개 이상 기록"),
+    ("🕸️ 먹이그물 설계자", "생태 역할 4가지 이상 발견"),
+    ("🔬 가설 연구자", "관찰/가정 기록 3개 이상 저장"),
+]
+
+QUIZ_BANK = [
+    {
+        "q": "학교 숲에서 서로 다른 나무와 곤충이 많아지면 어떤 점이 좋아질까요?",
+        "options": ["먹이그물과 서식처가 다양해져 생태계가 더 안정될 수 있어요", "모든 생물이 같은 먹이만 먹게 돼요", "관찰할 것은 줄어들어요"],
+        "answer": "먹이그물과 서식처가 다양해져 생태계가 더 안정될 수 있어요",
+        "why": "다양한 생물은 서로 다른 역할을 하며 생태계 회복력을 높여요.",
+    },
+    {
+        "q": "낙엽 아래 공벌레와 버섯을 발견했다면 어떤 역할과 가장 관련이 깊을까요?",
+        "options": ["분해자", "꽃가루 매개자", "씨앗 퍼뜨림"],
+        "answer": "분해자",
+        "why": "분해자는 죽은 잎과 나무를 흙의 양분으로 되돌리는 데 도움을 줘요.",
+    },
+    {
+        "q": "나무 한 그루를 관찰할 때 생물다양성을 더 잘 배우는 방법은?",
+        "options": ["잎만 보고 끝내기", "나무 주변 생물, 흔적, 역할까지 함께 기록하기", "이름만 외우기"],
+        "answer": "나무 주변 생물, 흔적, 역할까지 함께 기록하기",
+        "why": "생물다양성 학습은 이름보다 관계와 역할을 함께 볼 때 깊어져요.",
+    },
+]
+
+
 
 # ---------------------------
 # DB 로드/세이브
@@ -148,12 +221,12 @@ def new_tree_id() -> str:
 st.sidebar.header("메뉴")
 page = st.sidebar.radio(
     "이동",
-    ["🗺️ 나무 지도", "➕ 나무 추가", "📝 관찰/가정 기록", "📚 기능 학습", "⚙️ 데이터(내보내기/가져오기)"],
+    ["🎮 탐험 본부", "🗺️ 나무 지도", "➕ 나무 추가", "📝 관찰/가정 기록", "🦋 생물다양성 도감", "🧩 미션/퀴즈", "📚 기능 학습", "⚙️ 데이터(내보내기/가져오기)"],
     index=0,
 )
 
 st.sidebar.divider()
-st.sidebar.caption("✅ 팁: 처음엔 '나무 추가' → '관찰/가정 기록' → '기능 학습' 순서가 쉬워요.")
+st.sidebar.caption("✅ 팁: '나무 추가' → '생물다양성 도감' → '미션/퀴즈' 순서로 탐험해보세요.")
 
 
 db = load_db()
@@ -174,10 +247,92 @@ def find_tree(tree_id: str) -> Dict[str, Any] | None:
     return None
 
 
+def all_records() -> List[Dict[str, Any]]:
+    return [rec for t in trees for rec in t.get("records", [])]
+
+
+def all_observations() -> List[Dict[str, Any]]:
+    return [obs for t in trees for obs in t.get("biodiversity", [])]
+
+
+def species_set() -> Set[str]:
+    found = {str(t.get("species", "")).strip() for t in trees if str(t.get("species", "")).strip()}
+    found.update(str(obs.get("name", "")).strip() for obs in all_observations() if str(obs.get("name", "")).strip())
+    return found
+
+
+def role_set() -> Set[str]:
+    return {str(obs.get("role", "")).strip() for obs in all_observations() if str(obs.get("role", "")).strip()}
+
+
+def biodiversity_score() -> int:
+    return min(100, len(species_set()) * 8 + len(all_observations()) * 4 + len(role_set()) * 10 + len(all_records()) * 3)
+
+
+def earned_badges() -> List[str]:
+    badges = []
+    if len(trees) >= 1:
+        badges.append(BADGES[0][0])
+    if len(trees) >= 5:
+        badges.append(BADGES[1][0])
+    if len(all_observations()) >= 5:
+        badges.append(BADGES[2][0])
+    if len(role_set()) >= 4:
+        badges.append(BADGES[3][0])
+    if len(all_records()) >= 3:
+        badges.append(BADGES[4][0])
+    return badges
+
+
+def quest_progress(key: str) -> tuple[int, int]:
+    if key == "species_richness":
+        return len(species_set()), 3
+    if key == "microhabitat":
+        return len(all_observations()), 5
+    if key == "food_web":
+        return len(role_set()), 4
+    if key == "science_notes":
+        return len(all_records()), 3
+    return 0, 1
+
+
+
+# ---------------------------
+# 페이지: 탐험 본부
+# ---------------------------
+if page == "🎮 탐험 본부":
+    st.subheader("🎮 학교 숲 탐험 본부")
+    st.caption("RPG의 퀘스트, 도감, 배지 요소를 빌려 우리 학교 생태계의 다양성과 연결을 발견해요.")
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("등록한 나무", len(trees))
+    c2.metric("발견한 종/이름", len(species_set()))
+    c3.metric("주변 생물/흔적", len(all_observations()))
+    c4.metric("생물다양성 점수", biodiversity_score())
+    st.progress(biodiversity_score() / 100)
+
+    st.markdown("### 🏅 획득 배지")
+    badges = earned_badges()
+    if badges:
+        st.success("  ".join(badges))
+    else:
+        st.info("첫 나무를 등록하면 첫 배지를 받을 수 있어요.")
+
+    st.markdown("### 🧭 오늘의 미션")
+    for quest in QUESTS:
+        current, target = quest_progress(quest["key"])
+        st.write(f"{quest['emoji']} **{quest['title']}** — {quest['goal']} ({min(current, target)}/{target})")
+        st.progress(min(current / target, 1.0))
+        st.caption(quest["tip"])
+
+    st.markdown("### 🌍 왜 생물다양성을 기록할까요?")
+    st.write("생물다양성은 여러 생물이 서로 다른 역할을 하며 함께 살아가는 힘이에요. 학교 숲의 나무, 곤충, 새, 버섯, 낙엽 속 작은 생물을 연결해 보면 먹이그물과 서식처를 이해할 수 있어요.")
+
+
 # ---------------------------
 # 페이지: 나무 지도
 # ---------------------------
-if page == "🗺️ 나무 지도":
+elif page == "🗺️ 나무 지도":
     st.subheader("🗺️ 우리학교 나무 목록(지도용)")
     if not trees:
         st.info("아직 등록된 나무가 없어요. ➕ '나무 추가'에서 먼저 등록해보세요.")
@@ -248,7 +403,8 @@ elif page == "➕ 나무 추가":
                 "species": species.strip(),
                 "tags": [x.strip() for x in tags.split(",") if x.strip()],
                 "notes": notes.strip(),
-                "records": []  # 관찰/가정 기록이 쌓이는 곳
+                "records": [],  # 관찰/가정 기록이 쌓이는 곳
+                "biodiversity": []  # 주변 생물/흔적 도감
             }
             trees.append(t)
             db["trees"] = trees
@@ -336,6 +492,86 @@ elif page == "📝 관찰/가정 기록":
                         st.write("**결과/배운 점**:", rec.get("result",""))
                         if rec.get("photo_note"):
                             st.write("**사진 메모**:", rec["photo_note"])
+
+
+
+# ---------------------------
+# 페이지: 생물다양성 도감
+# ---------------------------
+elif page == "🦋 생물다양성 도감":
+    st.subheader("🦋 나무 주변 생물다양성 도감")
+    st.caption("나무만 보지 말고, 나무와 함께 사는 생물·흔적·역할을 기록해요.")
+
+    if not trees:
+        st.info("먼저 나무를 등록해야 주변 생물을 기록할 수 있어요.")
+    else:
+        options = {tree_label(t): t["id"] for t in trees}
+        selected_label = st.selectbox("탐험할 나무 선택", list(options.keys()))
+        t = find_tree(options[selected_label])
+
+        with st.form("biodiversity_form", clear_on_submit=True):
+            name = st.text_input("발견한 생물/흔적 이름", placeholder="예: 무당벌레, 새소리, 버섯, 낙엽 아래 공벌레")
+            role = st.selectbox("생태계 역할", list(BIODIVERSITY_ROLES.keys()))
+            place = st.text_input("어디에서 발견했나요?", placeholder="예: 나무껍질 틈, 잎 뒷면, 낙엽 아래")
+            evidence = st.text_area("관찰 증거", placeholder="색, 모양, 행동, 개수, 사진 메모 등을 적어보세요.", height=80)
+            submitted = st.form_submit_button("🦋 도감에 추가")
+
+        if submitted:
+            if not name.strip():
+                st.error("발견한 생물/흔적 이름을 적어주세요.")
+            else:
+                t.setdefault("biodiversity", []).append({
+                    "time": now_str(),
+                    "name": name.strip(),
+                    "role": role,
+                    "place": place.strip(),
+                    "evidence": evidence.strip(),
+                })
+                save_db(db)
+                st.success("도감에 추가했어요! 미션 진행도가 올라갑니다.")
+
+        st.divider()
+        st.markdown("### 🧬 역할 카드")
+        role_cols = st.columns(2)
+        for i, (role, desc) in enumerate(BIODIVERSITY_ROLES.items()):
+            with role_cols[i % 2]:
+                st.info(f"**{role}**: {desc}")
+
+        st.markdown("### 📖 누적 도감")
+        observations = t.get("biodiversity", [])
+        if not observations:
+            st.info("아직 이 나무 주변 도감 기록이 없어요.")
+        else:
+            for obs in reversed(observations):
+                with st.expander(f"{obs.get('name')} · {obs.get('role')} · {obs.get('time')}"):
+                    st.write("**장소**:", obs.get("place", ""))
+                    st.write("**증거**:", obs.get("evidence", ""))
+                    st.caption(BIODIVERSITY_ROLES.get(obs.get("role", ""), ""))
+
+
+# ---------------------------
+# 페이지: 미션/퀴즈
+# ---------------------------
+elif page == "🧩 미션/퀴즈":
+    st.subheader("🧩 생물다양성 미션/퀴즈")
+    st.caption("퀴즈는 생태계 역할, 먹이그물, 다양성의 의미를 점검하도록 만들었어요.")
+
+    for quest in QUESTS:
+        current, target = quest_progress(quest["key"])
+        status = "완료!" if current >= target else "진행 중"
+        st.write(f"{quest['emoji']} **{quest['title']}**: {status} ({min(current, target)}/{target})")
+        st.progress(min(current / target, 1.0))
+
+    st.divider()
+    st.markdown("### 🎲 오늘의 퀴즈")
+    quiz = QUIZ_BANK[st.session_state.get("quiz_index", 0) % len(QUIZ_BANK)]
+    choice = st.radio(quiz["q"], quiz["options"], key="quiz_choice")
+    if st.button("정답 확인"):
+        if choice == quiz["answer"]:
+            st.success("정답! " + quiz["why"])
+        else:
+            st.error(f"다시 생각해봐요. 정답은 '{quiz['answer']}'예요. {quiz['why']}")
+        st.session_state["quiz_index"] = st.session_state.get("quiz_index", 0) + 1
 
 
 # ---------------------------
